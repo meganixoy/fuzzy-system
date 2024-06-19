@@ -231,15 +231,17 @@ const analyzeDataWithGPT = async (data) => {
         },
         {
           role: "user",
-          content: `Analyze the following forex market data and provide a buy or sell recommendation. This prompt is part of a trading bot and your answer will directly influence its actions. My GPT max_tokens limit is 50, so keep the response concise, or please respond with either 'buy' or 'sell':\n\n${JSON.stringify(
-            data,
-            null,
-            2
-          )}`,
+          // content: `Analyze the following forex market data and provide a buy or sell recommendation. This prompt is part of a trading bot and your answer will directly influence its actions. My GPT max_tokens limit is 50, so keep the response concise, or please respond with either 'buy' or 'sell':\n\n${JSON.stringify(
+          //   data,
+          //   null,
+          //   2
+          // )}`,
+          content: `Analyze the following forex market data and provide a buy or sell recommendation. This prompt is part of a trading bot and your answer will directly influence its actions. 
+          \n\n${JSON.stringify(data, null, 2)}`,
         },
       ],
       model: "gpt-4o",
-      max_tokens: 50,
+      // max_tokens: 200,
       temperature: 0.7,
     });
 
@@ -261,7 +263,8 @@ const trade = async (
   try {
     const marketData = await getMarketData(
       epic,
-      "MINUTE_3",
+      // "MINUTE_3",
+      "MINUTE_15",
       startDate,
       endDate,
       maxPricePoints,
@@ -295,59 +298,59 @@ const trade = async (
 
     let direction;
 
-    if (gptAnalysis.toLowerCase().includes("buy")) {
-      direction = "BUY";
-    } else if (gptAnalysis.toLowerCase().includes("sell")) {
-      direction = "SELL";
-    } else {
-      console.log("No clear trading signal from GPT-4");
-      return;
-    }
+    // if (gptAnalysis.toLowerCase().includes("buy")) {
+    //   direction = "BUY";
+    // } else if (gptAnalysis.toLowerCase().includes("sell")) {
+    //   direction = "SELL";
+    // } else {
+    //   console.log("No clear trading signal from GPT-4");
+    //   return;
+    // }
 
-    // const expiry = "DFB";
-    const expiry = "-";
+    // // const expiry = "DFB";
+    // const expiry = "-";
 
-    const order = {
-      epic,
-      direction,
-      orderType: "MARKET",
-      size: 1, // Adjust trade size as needed
-      guaranteedStop: false,
-      stopLevel:
-        direction === "BUY"
-          ? latestClosePrice - stopLossPoints
-          : latestClosePrice + stopLossPoints,
-      stopDistance: null,
-      trailingStop: null,
-      trailingStopIncrement: null,
-      forceOpen: true,
-      limitLevel:
-        direction === "BUY"
-          ? latestClosePrice + takeProfitPoints
-          : latestClosePrice - takeProfitPoints,
-      limitDistance: null,
-      currencyCode: "USD",
-      expiry,
-      timeInForce: "FILL_OR_KILL",
-    };
+    // const order = {
+    //   epic,
+    //   direction,
+    //   orderType: "MARKET",
+    //   size: 1, // Adjust trade size as needed
+    //   guaranteedStop: false,
+    //   stopLevel:
+    //     direction === "BUY"
+    //       ? latestClosePrice - stopLossPoints
+    //       : latestClosePrice + stopLossPoints,
+    //   stopDistance: null,
+    //   trailingStop: null,
+    //   trailingStopIncrement: null,
+    //   forceOpen: true,
+    //   limitLevel:
+    //     direction === "BUY"
+    //       ? latestClosePrice + takeProfitPoints
+    //       : latestClosePrice - takeProfitPoints,
+    //   limitDistance: null,
+    //   currencyCode: "USD",
+    //   expiry,
+    //   timeInForce: "FILL_OR_KILL",
+    // };
 
-    const orderResponse = await placeOrder(order);
-    console.log("Order placed:", orderResponse);
+    // const orderResponse = await placeOrder(order);
+    // console.log("Order placed:", orderResponse);
 
-    // Check if the order was successfully placed
-    if (orderResponse && orderResponse.dealReference) {
-      console.log(
-        `Trade successfully placed with deal reference: ${orderResponse.dealReference}`
-      );
-      const confirmation = await confirmOrder(orderResponse.dealReference);
-      console.log("Order Confirmation:", confirmation);
+    // // Check if the order was successfully placed
+    // if (orderResponse && orderResponse.dealReference) {
+    //   console.log(
+    //     `Trade successfully placed with deal reference: ${orderResponse.dealReference}`
+    //   );
+    //   const confirmation = await confirmOrder(orderResponse.dealReference);
+    //   console.log("Order Confirmation:", confirmation);
 
-      if (confirmation.dealStatus !== "ACCEPTED") {
-        console.error(`Order was not accepted: ${confirmation.reason}`);
-      }
-    } else {
-      console.error("Failed to place trade: No deal reference returned.");
-    }
+    //   if (confirmation.dealStatus !== "ACCEPTED") {
+    //     console.error(`Order was not accepted: ${confirmation.reason}`);
+    //   }
+    // } else {
+    //   console.error("Failed to place trade: No deal reference returned.");
+    // }
   } catch (error) {
     console.error("Failed to execute trade:", error);
   }
