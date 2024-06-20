@@ -61,7 +61,10 @@ KucoinController.getKlines = async (req, res) => {
       const indicators = calculateIndicators(data);
 
       // Generate recommendations using GPT-4
-      const recommendations = await generateRecommendations(indicators);
+      const recommendations = await generateRecommendations(
+        indicators,
+        data[data.length - 1][2]
+      );
 
       return res.status(200).json({indicators, recommendations});
     } else {
@@ -96,16 +99,28 @@ const calculateIndicators = (data) => {
   return {rsi, macd, bollingerBands};
 };
 
-const generateRecommendations = async (indicators) => {
+const generateRecommendations = async (indicators, currentPrice) => {
+  const leverage = 50;
+  const targetProfitPercent = 0.2; // 20% PNL
+  const stopLossPercent = 0.05; // 5% PNL
+
+  const takeProfitPrice = currentPrice * (1 + targetProfitPercent / leverage);
+  const stopLossPrice = currentPrice * (1 - stopLossPercent / leverage);
+
   const prompt = `
-    Given the following cryptocurrency trading data and technical indicators, provide a clear and concise recommendation to buy or sell, considering that the trading is done with 100x leverage. Include suggested take profit and stop loss levels, with the understanding that high leverage increases risk significantly. The target profit should be between 10-15%. If the recommendation is to sell, the take profit should be lower than the entry price and the stop loss should be higher than the entry price. For a buy recommendation, the take profit should be higher than the entry price and the stop loss should be lower than the entry price.
+    Given the following cryptocurrency trading data and technical indicators, provide a clear and concise recommendation to buy or sell, considering that the trading is done with ${leverage}x leverage. Include suggested take profit and stop loss levels, with the understanding that high leverage increases risk significantly. The target PNL should account for trading fees and provide a net profit. If the recommendation is to sell, the take profit should be lower than the entry price and the stop loss should be higher than the entry price. For a buy recommendation, the take profit should be higher than the entry price and the stop loss should be lower than the entry price.
 
     Indicators:
     - RSI: ${JSON.stringify(indicators.rsi)}
     - MACD: ${JSON.stringify(indicators.macd)}
     - Bollinger Bands: ${JSON.stringify(indicators.bollingerBands)}
 
-    Please analyze the provided data and indicators to give a well-reasoned trading recommendation that takes into account the high leverage and target profit range.
+    Current Price: ${currentPrice}
+    Leverage: ${leverage}
+    Target Profit Price: ${takeProfitPrice}
+    Stop Loss Price: ${stopLossPrice}
+
+    Please analyze the provided data and indicators to give a well-reasoned trading recommendation that takes into account the leverage.
   `;
 
   try {
