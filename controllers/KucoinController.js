@@ -1,8 +1,8 @@
 require("dotenv").config();
 const axios = require("axios");
 const crypto = require("crypto");
-const {RSI, MACD, BollingerBands} = require("technicalindicators");
-const {OpenAI} = require("openai");
+const { RSI, MACD, BollingerBands } = require("technicalindicators");
+const { OpenAI } = require("openai");
 
 const KucoinController = {};
 const baseUrl = "https://api-futures.kucoin.com";
@@ -55,7 +55,7 @@ KucoinController.getKlines = async (req, res) => {
   const headers = createHeaders(apiKey, apiSecret, apiPassphrase, endpoint);
 
   try {
-    const response = await axios.get(url, {headers});
+    const response = await axios.get(url, { headers });
     if (response.data) {
       const data = response.data.data;
       const indicators = calculateIndicators(data);
@@ -66,20 +66,20 @@ KucoinController.getKlines = async (req, res) => {
         data[data.length - 1][2]
       );
 
-      return res.status(200).json({indicators, recommendations});
+      return res.status(200).json({ indicators, recommendations });
     } else {
-      return res.status(404).json({error: "Data not found"});
+      return res.status(404).json({ error: "Data not found" });
     }
   } catch (error) {
     console.error("Error fetching Kline data:", error);
-    return res.status(500).json({error: "Internal Server Error"});
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
 const calculateIndicators = (data) => {
   const closes = data.map((candle) => candle[2]);
 
-  const rsi = RSI.calculate({period: 14, values: closes});
+  const rsi = RSI.calculate({ period: 14, values: closes });
 
   const macd = MACD.calculate({
     values: closes,
@@ -96,7 +96,7 @@ const calculateIndicators = (data) => {
     stdDev: 2,
   });
 
-  return {rsi, macd, bollingerBands};
+  return { rsi, macd, bollingerBands };
 };
 
 const generateRecommendations = async (indicators, currentPrice) => {
@@ -104,11 +104,11 @@ const generateRecommendations = async (indicators, currentPrice) => {
   const targetProfitPercent = 0.2; // 20% PNL
   const stopLossPercent = 0.05; // 5% PNL
 
-  const takeProfitPrice = currentPrice * (1 + targetProfitPercent / leverage);
+  // const takeProfitPrice = currentPrice * (1 + targetProfitPercent / leverage);
   const stopLossPrice = currentPrice * (1 - stopLossPercent / leverage);
 
   const prompt = `
-    Given the following cryptocurrency trading data and technical indicators, provide a clear and concise recommendation to buy or sell, considering that the trading is done with ${leverage}x leverage. Include suggested take profit and stop loss levels, with the understanding that high leverage increases risk significantly. The target PNL should account for trading fees and provide a net profit. If the recommendation is to sell, the take profit should be lower than the entry price and the stop loss should be higher than the entry price. For a buy recommendation, the take profit should be higher than the entry price and the stop loss should be lower than the entry price.
+    Given the following cryptocurrency trading data and technical indicators, provide a clear and concise recommendation to buy or sell, considering that the trading is done with ${leverage}x leverage. Include suggested take profit and stop loss levels, with the understanding that high leverage increases risk significantly. If the recommendation is to sell, the take profit should be lower than the entry price and the stop loss should be higher than the entry price. For a buy recommendation, the take profit should be higher than the entry price and the stop loss should be lower than the entry price.
 
     Indicators:
     - RSI: ${JSON.stringify(indicators.rsi)}
@@ -117,7 +117,6 @@ const generateRecommendations = async (indicators, currentPrice) => {
 
     Current Price: ${currentPrice}
     Leverage: ${leverage}
-    Target Profit Price: ${takeProfitPrice}
     Stop Loss Price: ${stopLossPrice}
 
     Please analyze the provided data and indicators to give a well-reasoned trading recommendation that takes into account the leverage.
@@ -131,7 +130,7 @@ const generateRecommendations = async (indicators, currentPrice) => {
           content:
             "You are an expert cryptocurrency trading advisor specializing in technical analysis and high-leverage trading strategies.",
         },
-        {role: "user", content: prompt},
+        { role: "user", content: prompt },
       ],
       model: "gpt-4o",
       temperature: 0.7,
